@@ -11,15 +11,15 @@
 
 %% private API
 
--export([logshit/0]).
+-export([logger/0]).
 
 -record(online_streams, {streams, streamloggers, next_stream_id}).
 
-logshit() ->
+logger() ->
     receive 
-        #video_frame{} = Frame -> io:format("logged via ~p: ~p ~n", [self(), Frame#video_frame.content]), logshit();
+        #video_frame{} = Frame -> io:format("logged via ~p: ~p ~n", [self(), Frame#video_frame.content]), logger();
         stop -> io:format("Stopping logger with pid: ~p ~n", self());
-        _ -> io:format("Unknown message arrived", []), logshit()
+        _ -> io:format("Unknown message arrived", []), logger()
     end.
     
 
@@ -39,7 +39,7 @@ handle_call(Request, _From, State) ->
 %%We need to store stream_id, because we have to dispatch frames to right loggers
 handle_cast({stream_started, _Host, _StreamName, Stream, _Options}, #online_streams{streams = Streams, streamloggers = StreamLoggers, next_stream_id = StreamId }) ->
 
-    LoggerPid = spawn(?MODULE, logshit, []),
+    LoggerPid = spawn(?MODULE, logger, []),
 
     ems_media:play(Stream, [{stream_id, StreamId}]),
 	NewStreamLoggers = dict:store(StreamId, LoggerPid, StreamLoggers),
